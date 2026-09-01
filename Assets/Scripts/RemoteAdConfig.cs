@@ -11,33 +11,62 @@ namespace GameAnalyticsAndAds
     [Serializable]
     public class AdConfigData
     {
-        [Tooltip("Master switch: If false, all ads are turned off.")]
-        public bool show_ads = true;
+        [Tooltip("Game ID string format (e.g. az-1012 or sd-2021).")]
+        public string GameId = "";
 
-        [Tooltip("Controls whether interstitial ads are enabled.")]
-        public bool show_interstitial = true;
+        [Tooltip("Optional project / package name (Application.identifier).")]
+        public string ProjectName = "";
 
-        [Tooltip("Controls whether rewarded video ads are enabled.")]
-        public bool show_rewarded = true;
+        [Tooltip("Master kill switch: If true, all ads are completely disabled across the game.")]
+        public bool HideAllAds = false;
 
-        [Tooltip("Cooldown period in seconds between showing interstitial ads.")]
-        public float interstitial_interval_sec = 45f;
+        [Tooltip("Master switch for App Open ads.")]
+        public bool CanShowAppOpen = true;
 
-        [Tooltip("Max seconds to wait for an ad to load/respond before continuing safely.")]
-        public float ad_fail_timeout = 5f;
+        [Tooltip("Allow showing App Open ads on application cold start / launch.")]
+        public bool CanShowAppOpenOnStart = true;
 
-        // Convenient PascalCase properties
-        public bool ShowAds => show_ads;
-        public bool ShowInterstitial => show_interstitial;
-        public bool ShowRewarded => show_rewarded;
-        public float InterstitialIntervalSec => interstitial_interval_sec;
-        public float AdFailTimeout => ad_fail_timeout;
+        [Tooltip("Allow showing App Open ads when resuming from background.")]
+        public bool CanShowAppOpenOnResume = true;
+
+        [Tooltip("Allow showing App Open ads after an interstitial ad completes.")]
+        public bool CanShowAppOpenAfterInterstitial = false;
+
+        [Tooltip("Alternative/secondary rule for App Open after interstitial.")]
+        public bool CanShowAppOpenAfterInterstitial2 = false;
+
+        [Tooltip("Allow showing standard Banner ads.")]
+        public bool CanShowBanner = true;
+
+        [Tooltip("Allow showing Interstitial ads.")]
+        public bool CanShowInterstitial = true;
+
+        [Tooltip("Allow showing Rewarded video ads.")]
+        public bool CanShowRewarded = true;
+
+        [Tooltip("Allow showing Rectangular / MREC banner ads.")]
+        public bool CanShowRectBanner = true;
+
+        [Tooltip("Delay in seconds before missions/gameplay can trigger ads.")]
+        public int MissionDelay = 60;
+
+        // Convenient helpers
+        public bool AdsEnabled => !HideAllAds;
+
+        // Backwards compatibility helpers
+        public bool show_ads => !HideAllAds;
+        public bool show_interstitial => CanShowInterstitial;
+        public bool show_rewarded => CanShowRewarded;
 
         public override string ToString()
         {
-            return $"[AdConfigData] show_ads={show_ads}, show_interstitial={show_interstitial}, " +
-                   $"show_rewarded={show_rewarded}, interstitial_interval_sec={interstitial_interval_sec}, " +
-                   $"ad_fail_timeout={ad_fail_timeout}";
+            return $"[AdConfigData] HideAllAds={HideAllAds}, CanShowAppOpen={CanShowAppOpen}, " +
+                   $"CanShowAppOpenOnStart={CanShowAppOpenOnStart}, CanShowAppOpenOnResume={CanShowAppOpenOnResume}, " +
+                   $"CanShowAppOpenAfterInterstitial={CanShowAppOpenAfterInterstitial}, " +
+                   $"CanShowAppOpenAfterInterstitial2={CanShowAppOpenAfterInterstitial2}, " +
+                   $"CanShowBanner={CanShowBanner}, CanShowInterstitial={CanShowInterstitial}, " +
+                   $"CanShowRewarded={CanShowRewarded}, CanShowRectBanner={CanShowRectBanner}, " +
+                   $"MissionDelay={MissionDelay}";
         }
     }
 
@@ -47,7 +76,7 @@ namespace GameAnalyticsAndAds
     /// 
     /// PLUG & PLAY:
     /// - No scene setup needed! Automatically initializes on game launch.
-    /// - Use static helpers anywhere: RemoteAdConfig.ShowAds, RemoteAdConfig.ShowInterstitial, etc.
+    /// - Use static helpers anywhere: RemoteAdConfig.HideAllAds, RemoteAdConfig.CanShowInterstitial, etc.
     /// - Subscribe with 1 line: RemoteAdConfig.OnReady(config => { ... });
     /// </summary>
     [DefaultExecutionOrder(-1000)]
@@ -55,29 +84,79 @@ namespace GameAnalyticsAndAds
     {
         #region Static Quick Accessors (Zero Setup Needed)
         /// <summary>
-        /// Master switch: Returns false if remote config disabled ads, or true by default.
+        /// Remote Game ID code (e.g. az-1012, sd-2021).
         /// </summary>
-        public static bool ShowAds => Instance != null ? Instance.CurrentConfig.show_ads : true;
+        public static string GameId => Instance != null ? Instance.CurrentConfig.GameId : "";
+
+        /// <summary>
+        /// Remote Project Name (Application.identifier).
+        /// </summary>
+        public static string ProjectName => Instance != null ? Instance.CurrentConfig.ProjectName : "";
+
+        /// <summary>
+        /// Master switch: Returns true if all ads are hidden/disabled.
+        /// </summary>
+        public static bool HideAllAds => Instance != null ? Instance.CurrentConfig.HideAllAds : false;
+
+        /// <summary>
+        /// True if ads are enabled (!HideAllAds).
+        /// </summary>
+        public static bool AdsEnabled => !HideAllAds;
+
+        /// <summary>
+        /// Master switch for App Open ads.
+        /// </summary>
+        public static bool CanShowAppOpen => Instance != null ? (Instance.CurrentConfig.CanShowAppOpen && !Instance.CurrentConfig.HideAllAds) : true;
+
+        /// <summary>
+        /// True if App Open can be shown on start.
+        /// </summary>
+        public static bool CanShowAppOpenOnStart => Instance != null ? Instance.CurrentConfig.CanShowAppOpenOnStart : true;
+
+        /// <summary>
+        /// True if App Open can be shown on resume.
+        /// </summary>
+        public static bool CanShowAppOpenOnResume => Instance != null ? Instance.CurrentConfig.CanShowAppOpenOnResume : true;
+
+        /// <summary>
+        /// True if App Open can be shown after interstitial.
+        /// </summary>
+        public static bool CanShowAppOpenAfterInterstitial => Instance != null ? Instance.CurrentConfig.CanShowAppOpenAfterInterstitial : false;
+
+        /// <summary>
+        /// True if App Open can be shown after interstitial (rule 2).
+        /// </summary>
+        public static bool CanShowAppOpenAfterInterstitial2 => Instance != null ? Instance.CurrentConfig.CanShowAppOpenAfterInterstitial2 : false;
+
+        /// <summary>
+        /// True if banner ads are permitted.
+        /// </summary>
+        public static bool CanShowBanner => Instance != null ? (Instance.CurrentConfig.CanShowBanner && !Instance.CurrentConfig.HideAllAds) : true;
+
+        /// <summary>
+        /// True if rectangular/MREC banner ads are permitted.
+        /// </summary>
+        public static bool CanShowRectBanner => Instance != null ? (Instance.CurrentConfig.CanShowRectBanner && !Instance.CurrentConfig.HideAllAds) : true;
 
         /// <summary>
         /// True if interstitial ads are permitted.
         /// </summary>
-        public static bool ShowInterstitial => Instance != null ? Instance.CurrentConfig.show_interstitial : true;
+        public static bool CanShowInterstitial => Instance != null ? (Instance.CurrentConfig.CanShowInterstitial && !Instance.CurrentConfig.HideAllAds) : true;
 
         /// <summary>
         /// True if rewarded video ads are permitted.
         /// </summary>
-        public static bool ShowRewarded => Instance != null ? Instance.CurrentConfig.show_rewarded : true;
+        public static bool CanShowRewarded => Instance != null ? (Instance.CurrentConfig.CanShowRewarded && !Instance.CurrentConfig.HideAllAds) : true;
 
         /// <summary>
-        /// Cooldown in seconds between interstitial ads.
+        /// Mission delay in seconds before gameplay/missions can show ads.
         /// </summary>
-        public static float InterstitialInterval => Instance != null ? Instance.CurrentConfig.interstitial_interval_sec : 45f;
+        public static int MissionDelay => Instance != null ? Instance.CurrentConfig.MissionDelay : 60;
 
         /// <summary>
-        /// Ad failure timeout in seconds.
+        /// Backwards compatibility helper for ShowAds.
         /// </summary>
-        public static float AdFailTimeout => Instance != null ? Instance.CurrentConfig.ad_fail_timeout : 5f;
+        public static bool ShowAds => AdsEnabled;
 
         /// <summary>
         /// True once the configuration has resolved (remote or safe fallback).
@@ -95,11 +174,17 @@ namespace GameAnalyticsAndAds
 
         private static readonly AdConfigData SafeDefaults = new AdConfigData
         {
-            show_ads = true,
-            show_interstitial = true,
-            show_rewarded = true,
-            interstitial_interval_sec = 45f,
-            ad_fail_timeout = 5f
+            HideAllAds = false,
+            CanShowAppOpen = true,
+            CanShowAppOpenOnStart = true,
+            CanShowAppOpenOnResume = true,
+            CanShowAppOpenAfterInterstitial = false,
+            CanShowAppOpenAfterInterstitial2 = false,
+            CanShowBanner = true,
+            CanShowInterstitial = true,
+            CanShowRewarded = true,
+            CanShowRectBanner = true,
+            MissionDelay = 60
         };
 
         // Automatically boots before first scene loads - no need to manually place in any scene!
@@ -137,7 +222,21 @@ namespace GameAnalyticsAndAds
         }
         #endregion
 
-        #region Inspector Settings (Pre-Configured for AzGamesStation/Game-Config)
+        #region Inspector Settings
+        [Header("Game Identification")]
+        [Tooltip("Game ID string format (e.g. az-1012, sd-2021). If left blank, RemoteAdConfig will fetch using Application.identifier.")]
+        [SerializeField] private string gameCode = "";
+
+        [Header("Splash Screen & Lifecycle")]
+        [Tooltip("Keep GameObject persistent between scenes.")]
+        [SerializeField] private bool persistAcrossScenes = true;
+
+        [Tooltip("Automatically start fetching on Awake/Start (runs once).")]
+        [SerializeField] private bool autoFetchOnStart = true;
+
+        [Tooltip("UnityEvent fired as soon as configuration is ready (convenient for Splash Screen UI/scenes).")]
+        [SerializeField] private UnityEvent<AdConfigData> onConfigLoaded;
+
         [Header("GitHub Repository Configuration")]
         [Tooltip("GitHub username / organization")]
         [SerializeField] private string githubUsername = "AzGamesStation";
@@ -145,14 +244,14 @@ namespace GameAnalyticsAndAds
         [Tooltip("GitHub repository name")]
         [SerializeField] private string repositoryName = "Game-Config";
 
-        [Tooltip("Branch name (usually 'main' or 'master')")]
+        [Tooltip("Branch name (usually 'main')")]
         [SerializeField] private string branch = "main";
 
         [Tooltip("Folder containing the game json files")]
         [SerializeField] private string configsDirectory = "configs";
 
         [Header("Network Settings")]
-        [Tooltip("Seconds before timeout and using fallback defaults")]
+        [Tooltip("Seconds before timeout for each request")]
         [Range(2, 30)]
         [SerializeField] private int requestTimeoutSeconds = 8;
 
@@ -171,7 +270,16 @@ namespace GameAnalyticsAndAds
         public bool IsRemoteLoaded { get; private set; }
         public AdConfigData CurrentConfig { get; private set; }
         public string TargetRawUrl { get; private set; }
+
+        private bool isFetching = false;
+        private bool hasFetched = false;
         #endregion
+
+        public string GameCode
+        {
+            get => gameCode;
+            set => gameCode = value;
+        }
 
         private void Awake()
         {
@@ -182,14 +290,33 @@ namespace GameAnalyticsAndAds
             }
 
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            if (persistAcrossScenes)
+            {
+                DontDestroyOnLoad(gameObject);
+            }
 
             CurrentConfig = defaultFallbackConfig ?? SafeDefaults;
-            FetchRemoteConfig();
+
+            if (autoFetchOnStart)
+            {
+                FetchRemoteConfig();
+            }
         }
 
-        public void FetchRemoteConfig()
+        /// <summary>
+        /// Fetches remote config. Runs once; ignores repeat calls unless forceRefresh is true.
+        /// Ideal to link in Splash Screen.
+        /// </summary>
+        public void FetchRemoteConfig(bool forceRefresh = false)
         {
+            if (hasFetched && !forceRefresh)
+            {
+                NotifyLoaded();
+                return;
+            }
+
+            if (isFetching) return;
+
             StartCoroutine(FetchConfigRoutine());
         }
 
@@ -204,25 +331,86 @@ namespace GameAnalyticsAndAds
             return Application.identifier;
         }
 
-        public string BuildRawGitHubUrl()
+        private string BuildRawGitHubUrl(string fileIdentifier, long cacheBust)
         {
-            string packageId = GetPackageIdentifier();
             string folder = string.IsNullOrEmpty(configsDirectory) ? "" : $"{configsDirectory.Trim('/')}/";
-            return $"https://raw.githubusercontent.com/{githubUsername.Trim()}/{repositoryName.Trim()}/{branch.Trim()}/{folder}{packageId}.json";
+            return $"https://raw.githubusercontent.com/{githubUsername.Trim()}/{repositoryName.Trim()}/{branch.Trim()}/{folder}{fileIdentifier.Trim()}.json?t={cacheBust}";
         }
 
         private IEnumerator FetchConfigRoutine()
         {
-            TargetRawUrl = BuildRawGitHubUrl();
+            isFetching = true;
+            string code = gameCode?.Trim();
             string packageId = GetPackageIdentifier();
-
-            // Cache-busting query parameter (?t=timestamp) prevents CDN from caching stale config
             long cacheBust = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-            string finalUrl = $"{TargetRawUrl}?t={cacheBust}";
+            bool loaded = false;
 
-            Debug.Log($"[RemoteAdConfig] Loading config for '{packageId}' from: {finalUrl}");
+            // Scenario 1: Game Code is provided
+            if (!string.IsNullOrEmpty(code))
+            {
+                string codeUrl = BuildRawGitHubUrl(code, cacheBust);
+                TargetRawUrl = codeUrl;
+                Debug.Log($"[RemoteAdConfig] Loading config using Game Code '{code}' from: {codeUrl}");
 
-            using (UnityWebRequest request = UnityWebRequest.Get(finalUrl))
+                yield return DownloadAndParseJson(codeUrl, success => loaded = success);
+
+                if (loaded)
+                {
+                    Debug.Log($"[RemoteAdConfig] Successfully loaded remote config for Game ID: '{code}'");
+                }
+                else
+                {
+                    Debug.LogWarning($"[RemoteAdConfig] No json file found for Game ID '{code}'. Searching through package name '{packageId}'...");
+
+                    string pkgUrl = BuildRawGitHubUrl(packageId, cacheBust);
+                    TargetRawUrl = pkgUrl;
+                    yield return DownloadAndParseJson(pkgUrl, success => loaded = success);
+
+                    if (loaded)
+                    {
+                        Debug.Log($"[RemoteAdConfig] Successfully loaded remote config using fallback Package Name: '{packageId}'");
+                    }
+                    else
+                    {
+                        Debug.LogError($"[RemoteAdConfig] Game ID '{code}' not found, and no json file found with package name '{packageId}'. Using fallback defaults.");
+                    }
+                }
+            }
+            // Scenario 2: Game Code is NOT provided (empty string)
+            else
+            {
+                Debug.Log($"[RemoteAdConfig] No Game ID given. Searching through package name '{packageId}'...");
+
+                string pkgUrl = BuildRawGitHubUrl(packageId, cacheBust);
+                TargetRawUrl = pkgUrl;
+                yield return DownloadAndParseJson(pkgUrl, success => loaded = success);
+
+                if (loaded)
+                {
+                    Debug.Log($"[RemoteAdConfig] Successfully loaded remote config using Package Name: '{packageId}'");
+                }
+                else
+                {
+                    Debug.LogError($"[RemoteAdConfig] No ID given, and no json file found with package name '{packageId}'. Using fallback defaults.");
+                }
+            }
+
+            if (!loaded)
+            {
+                CurrentConfig = defaultFallbackConfig ?? SafeDefaults;
+                IsLoaded = true;
+                IsRemoteLoaded = false;
+                Debug.Log($"[RemoteAdConfig] Using safe fallback config: {CurrentConfig}");
+            }
+
+            hasFetched = true;
+            isFetching = false;
+            NotifyLoaded();
+        }
+
+        private IEnumerator DownloadAndParseJson(string url, Action<bool> onComplete)
+        {
+            using (UnityWebRequest request = UnityWebRequest.Get(url))
             {
                 request.timeout = requestTimeoutSeconds;
                 request.SetRequestHeader("Cache-Control", "no-cache, no-store, must-revalidate");
@@ -248,7 +436,7 @@ namespace GameAnalyticsAndAds
                     }
                     catch (Exception ex)
                     {
-                        Debug.LogWarning($"[RemoteAdConfig] JSON parse error: {ex.Message}. Falling back to default settings.");
+                        Debug.LogWarning($"[RemoteAdConfig] JSON parse error: {ex.Message}");
                     }
 
                     if (parsed != null)
@@ -256,39 +444,26 @@ namespace GameAnalyticsAndAds
                         CurrentConfig = parsed;
                         IsLoaded = true;
                         IsRemoteLoaded = true;
-                        Debug.Log($"[RemoteAdConfig] Successfully loaded remote config: {CurrentConfig}");
-                        NotifyLoaded();
+                        onComplete?.Invoke(true);
                         yield break;
                     }
                 }
-                else
-                {
-                    string reason = request.responseCode == 404
-                        ? $"404 Not Found. Make sure 'configs/{packageId}.json' exists in repo 'https://github.com/{githubUsername}/{repositoryName}' and repository is PUBLIC."
-                        : $"HTTP {request.responseCode}: {request.error}";
 
-                    Debug.LogWarning($"[RemoteAdConfig] Could not fetch remote config ({reason}). Falling back to safe defaults.");
-                }
+                onComplete?.Invoke(false);
             }
-
-            // Safe fallback path (offline, 404, or parse error)
-            CurrentConfig = defaultFallbackConfig ?? SafeDefaults;
-            IsLoaded = true;
-            IsRemoteLoaded = false;
-            Debug.Log($"[RemoteAdConfig] Using safe fallback config: {CurrentConfig}");
-            NotifyLoaded();
         }
 
         private void NotifyLoaded()
         {
             try
             {
+                onConfigLoaded?.Invoke(CurrentConfig);
                 OnConfigLoadedInternal?.Invoke(CurrentConfig);
                 OnConfigLoadedInternal = null; // Unregister one-shot subscribers
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[RemoteAdConfig] Exception in OnReady callback: {ex}");
+                Debug.LogError($"[RemoteAdConfig] Exception in config ready callback: {ex}");
             }
         }
     }

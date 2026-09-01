@@ -195,6 +195,21 @@
       border-color: var(--accent);
     }
 
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .btn-refresh.spinning {
+      animation: spin 0.75s linear infinite;
+      pointer-events: none;
+      opacity: 0.6;
+    }
+
+    #field_HideAllAds:checked + .slider {
+      background-color: var(--danger);
+    }
+
     .games-list-container {
       flex: 1;
       overflow-y: auto;
@@ -222,15 +237,46 @@
       border-color: var(--border-focus);
     }
 
+    .game-item-info {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      overflow: hidden;
+      max-width: 210px;
+    }
+
     .game-item-title {
       font-size: 13px;
-      font-weight: 500;
+      font-weight: 600;
       color: var(--text);
       font-family: var(--font-mono);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
-      max-width: 210px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .game-id-badge {
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+    }
+
+    .game-item-sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-family: var(--font-mono);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .game-badge {
@@ -539,7 +585,7 @@
     <div class="search-section">
       <div class="search-input-wrapper">
         <span class="search-icon">🔍</span>
-        <input type="text" class="search-input" id="searchBox" placeholder="Search game package..." oninput="filterGames()">
+        <input type="text" class="search-input" id="searchBox" placeholder="Search by Game ID (az-1012) or Package..." oninput="filterGames()">
       </div>
     </div>
 
@@ -547,7 +593,7 @@
       <button class="btn-new-game" onclick="startNewGame()">
         <span>+</span> Add New Game
       </button>
-      <button class="btn-refresh" title="Refresh List" onclick="loadGamesFromGitHub(true)">
+      <button class="btn-refresh" id="refreshBtn" title="Refresh List" onclick="loadGamesFromGitHub(true)">
         🔄
       </button>
     </div>
@@ -572,68 +618,153 @@
     </div>
 
     <div class="editor-wrapper">
-      <!-- Config Form -->
+      <!-- Game Identification -->
       <div class="card">
         <div class="card-heading">Game Identification</div>
-        <div class="form-group">
-          <label class="form-label">Package Name (Application.identifier)</label>
-          <input type="text" id="packageNameInput" placeholder="e.g. com.azgame.gameone" oninput="onPackageNameChanged()">
-          <div class="form-help">Must match your Unity Player Settings package name strictly.</div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Game ID / Code <span style="color:var(--danger);">*</span> (Required)</label>
+            <input type="text" id="gameIdInput" placeholder="e.g. az-1012 or sd-2021" oninput="onGameIdChanged()">
+            <div class="form-help">Unique string format. Used in Unity to load configs directly.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Project / Package Name (Optional)</label>
+            <input type="text" id="projectNameInput" placeholder="e.g. com.azgame.gameone" oninput="onProjectNameChanged()">
+            <div class="form-help">Unity Player Application.identifier. Used as fallback lookup.</div>
+          </div>
         </div>
       </div>
 
+      <!-- Master Controls & Timing -->
       <div class="card">
-        <div class="card-heading">Ad Placement Rules</div>
+        <div class="card-heading">Master Controls & Timing</div>
 
-        <!-- Master Switch -->
         <div class="switch-row">
           <div class="switch-meta">
-            <h4>Show All Ads (Master Kill Switch)</h4>
-            <p>If toggled off, all ads are completely disabled for this game.</p>
+            <h4>Hide All Ads (Master Kill Switch)</h4>
+            <p>When toggled ON, all ads across the entire game will be completely suppressed.</p>
           </div>
           <label class="switch">
-            <input type="checkbox" id="field_show_ads" checked>
+            <input type="checkbox" id="field_HideAllAds">
             <span class="slider"></span>
           </label>
         </div>
 
-        <!-- Interstitial -->
-        <div class="switch-row">
-          <div class="switch-meta">
-            <h4>Enable Interstitial Ads</h4>
-            <p>Show full-screen ads on level ends or checkpoints.</p>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="field_show_interstitial" checked>
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <!-- Rewarded -->
-        <div class="switch-row">
-          <div class="switch-meta">
-            <h4>Enable Rewarded Video Ads</h4>
-            <p>Allow players to earn in-game rewards by watching videos.</p>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="field_show_rewarded" checked>
-            <span class="slider"></span>
-          </label>
-        </div>
-
-        <!-- Timers -->
-        <div class="grid-2" style="margin-top: 20px;">
+        <div style="margin-top: 18px;">
           <div class="form-group">
-            <label class="form-label">Interstitial Cooldown (sec)</label>
-            <input type="number" id="field_interstitial_interval" value="45.0" step="5" min="0">
-            <div class="form-help">Minimum seconds between interstitial ads.</div>
+            <label class="form-label">Mission Delay (Seconds)</label>
+            <input type="number" id="field_MissionDelay" value="60" step="5" min="0">
+            <div class="form-help">Cooldown or delay period in seconds before missions/gameplay can trigger ads.</div>
           </div>
+        </div>
+      </div>
 
-          <div class="form-group">
-            <label class="form-label">Ad Fail Timeout (sec)</label>
-            <input type="number" id="field_ad_fail_timeout" value="5.0" step="1" min="1">
-            <div class="form-help">Max wait seconds before skipping ad.</div>
+      <!-- App Open Ad Placements -->
+      <div class="card">
+        <div class="card-heading">App Open Ad Rules</div>
+
+        <div class="switch-row">
+          <div class="switch-meta">
+            <h4>Can Show App Open (Master)</h4>
+            <p>Master switch controlling fullscreen App Open ads.</p>
           </div>
+          <label class="switch">
+            <input type="checkbox" id="field_CanShowAppOpen" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="switch-row">
+          <div class="switch-meta">
+            <h4>Can Show App Open On Start</h4>
+            <p>Allow showing App Open ad when the game starts or cold boots.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="field_CanShowAppOpenOnStart" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="switch-row">
+          <div class="switch-meta">
+            <h4>Can Show App Open On Resume</h4>
+            <p>Allow showing App Open ad when player returns to the game from background.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="field_CanShowAppOpenOnResume" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="switch-row">
+          <div class="switch-meta">
+            <h4>Can Show App Open After Interstitial</h4>
+            <p>Allow showing App Open ad after an interstitial ad completes.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="field_CanShowAppOpenAfterInterstitial">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="switch-row">
+          <div class="switch-meta">
+            <h4>Can Show App Open After Interstitial 2</h4>
+            <p>Alternative / secondary rule for App Open after interstitial.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="field_CanShowAppOpenAfterInterstitial2">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Standard Formats -->
+      <div class="card">
+        <div class="card-heading">Standard Ad Placements</div>
+
+        <div class="switch-row">
+          <div class="switch-meta">
+            <h4>Can Show Banner</h4>
+            <p>Display anchored top or bottom banner ads.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="field_CanShowBanner" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="switch-row">
+          <div class="switch-meta">
+            <h4>Can Show Rect Banner (MREC)</h4>
+            <p>Display medium rectangular (300x250) banner ads.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="field_CanShowRectBanner" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="switch-row">
+          <div class="switch-meta">
+            <h4>Can Show Interstitial</h4>
+            <p>Display full-screen interstitial ads during level transitions or pauses.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="field_CanShowInterstitial" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="switch-row">
+          <div class="switch-meta">
+            <h4>Can Show Rewarded</h4>
+            <p>Allow players to watch opt-in rewarded video ads for rewards.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="field_CanShowRewarded" checked>
+            <span class="slider"></span>
+          </label>
         </div>
       </div>
 
@@ -652,7 +783,7 @@
     <div class="modal">
       <div class="modal-title">🔑 GitHub Authentication Token</div>
       <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;">
-        Paste a GitHub Personal Access Token with <b>repo</b> scope to allow saving changes. Stored locally in your browser only.
+        You can <b>view and refresh</b> public configurations without a token. A GitHub Personal Access Token with <b>repo</b> scope is only required to <b>save and publish</b> changes to GitHub.
       </p>
       <div class="form-group">
         <input type="password" id="modalTokenInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
@@ -660,9 +791,12 @@
           <a href="https://github.com/settings/tokens/new?scopes=repo&description=AzGamesConfigDashboard" target="_blank" style="color: var(--accent);">Generate token on GitHub (30s)</a>
         </div>
       </div>
-      <div style="display:flex; justify-content: flex-end; gap: 8px; margin-top: 20px;">
-        <button class="token-btn" onclick="closeTokenModal()">Cancel</button>
-        <button class="btn-new-game" style="flex:none; padding: 8px 18px;" onclick="saveTokenFromModal()">Connect</button>
+      <div style="display:flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+        <button class="token-btn" style="color: var(--danger); border-color: rgba(239, 68, 68, 0.4);" onclick="disconnectToken()">Disconnect</button>
+        <div style="display:flex; gap: 8px;">
+          <button class="token-btn" onclick="closeTokenModal()">Cancel</button>
+          <button class="btn-new-game" style="flex:none; padding: 8px 18px;" onclick="saveTokenFromModal()">Connect</button>
+        </div>
       </div>
     </div>
   </div>
@@ -672,7 +806,23 @@
     const REPO_NAME = "Game-Config";
     const FOLDER = "configs";
 
-    let games = []; // array of { name: 'com.azgame.gameone', sha: '...', config: { ... } }
+    const DEFAULT_CONFIG = {
+      GameId: "",
+      ProjectName: "",
+      HideAllAds: false,
+      CanShowAppOpen: true,
+      CanShowAppOpenOnStart: true,
+      CanShowAppOpenOnResume: true,
+      CanShowAppOpenAfterInterstitial: false,
+      CanShowAppOpenAfterInterstitial2: false,
+      CanShowBanner: true,
+      CanShowInterstitial: true,
+      CanShowRewarded: true,
+      CanShowRectBanner: true,
+      MissionDelay: 60
+    };
+
+    let games = []; // array of { name: 'az-1012', sha: '...', config: { ... } }
     let activeGameName = null;
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -680,14 +830,15 @@
       if (savedToken) {
         document.getElementById('modalTokenInput').value = savedToken;
         updateTokenBadge(true);
-        loadGamesFromGitHub(false);
       } else {
-        openTokenModal();
+        updateTokenBadge(false);
       }
+      // Always load games on page load - works without token for public repository!
+      loadGamesFromGitHub(false);
     });
 
     function getToken() {
-      return localStorage.getItem('azgames_token') || document.getElementById('modalTokenInput').value.trim();
+      return (localStorage.getItem('azgames_token') || document.getElementById('modalTokenInput').value || "").trim();
     }
 
     function openTokenModal() {
@@ -701,11 +852,24 @@
 
     function saveTokenFromModal() {
       const token = document.getElementById('modalTokenInput').value.trim();
-      if (!token) return;
+      if (!token) {
+        showToast("Please enter a valid GitHub token or click Cancel.", false);
+        return;
+      }
       localStorage.setItem('azgames_token', token);
       closeTokenModal();
       updateTokenBadge(true);
+      showToast("Token saved! Loading fresh repository data...", true);
       loadGamesFromGitHub(true);
+    }
+
+    function disconnectToken() {
+      localStorage.removeItem('azgames_token');
+      document.getElementById('modalTokenInput').value = '';
+      updateTokenBadge(false);
+      closeTokenModal();
+      showToast("GitHub token removed. Operating in public read mode.", true);
+      loadGamesFromGitHub(false);
     }
 
     function updateTokenBadge(isConnected) {
@@ -720,48 +884,113 @@
       }
     }
 
-    // Load games from GitHub with cache-busting
+    function normalizeConfig(data, defaultName = "") {
+      if (!data || typeof data !== 'object') return { ...DEFAULT_CONFIG, GameId: defaultName };
+      return {
+        GameId: data.GameId || data.gameId || data.id || data.GameCode || data.gameCode || defaultName,
+        ProjectName: data.ProjectName || data.projectName || data.PackageName || data.packageName || "",
+        HideAllAds: data.HideAllAds !== undefined ? Boolean(data.HideAllAds) : (data.show_ads !== undefined ? !data.show_ads : DEFAULT_CONFIG.HideAllAds),
+        CanShowAppOpen: data.CanShowAppOpen !== undefined ? Boolean(data.CanShowAppOpen) : DEFAULT_CONFIG.CanShowAppOpen,
+        CanShowAppOpenOnStart: data.CanShowAppOpenOnStart !== undefined ? Boolean(data.CanShowAppOpenOnStart) : DEFAULT_CONFIG.CanShowAppOpenOnStart,
+        CanShowAppOpenOnResume: data.CanShowAppOpenOnResume !== undefined ? Boolean(data.CanShowAppOpenOnResume) : DEFAULT_CONFIG.CanShowAppOpenOnResume,
+        CanShowAppOpenAfterInterstitial: data.CanShowAppOpenAfterInterstitial !== undefined ? Boolean(data.CanShowAppOpenAfterInterstitial) : DEFAULT_CONFIG.CanShowAppOpenAfterInterstitial,
+        CanShowAppOpenAfterInterstitial2: data.CanShowAppOpenAfterInterstitial2 !== undefined ? Boolean(data.CanShowAppOpenAfterInterstitial2) : DEFAULT_CONFIG.CanShowAppOpenAfterInterstitial2,
+        CanShowBanner: data.CanShowBanner !== undefined ? Boolean(data.CanShowBanner) : DEFAULT_CONFIG.CanShowBanner,
+        CanShowInterstitial: data.CanShowInterstitial !== undefined ? Boolean(data.CanShowInterstitial) : (data.show_interstitial !== undefined ? Boolean(data.show_interstitial) : DEFAULT_CONFIG.CanShowInterstitial),
+        CanShowRewarded: data.CanShowRewarded !== undefined ? Boolean(data.CanShowRewarded) : (data.show_rewarded !== undefined ? Boolean(data.show_rewarded) : DEFAULT_CONFIG.CanShowRewarded),
+        CanShowRectBanner: data.CanShowRectBanner !== undefined ? Boolean(data.CanShowRectBanner) : DEFAULT_CONFIG.CanShowRectBanner,
+        MissionDelay: typeof data.MissionDelay === 'number' ? data.MissionDelay : (parseInt(data.MissionDelay, 10) || DEFAULT_CONFIG.MissionDelay)
+      };
+    }
+
+    // Load games from GitHub with cache-busting, public read support & pagination
     async function loadGamesFromGitHub(showToastNotice = false) {
       const token = getToken();
-      if (!token) return;
-
       const listEl = document.getElementById('gamesList');
-      listEl.innerHTML = '<div class="empty-state">Fetching from GitHub...</div>';
+      const refreshBtn = document.getElementById('refreshBtn');
+
+      if (refreshBtn) refreshBtn.classList.add('spinning');
+      if (games.length === 0) {
+        listEl.innerHTML = '<div class="empty-state">Fetching from GitHub...</div>';
+      }
 
       try {
-        // Cache-busting timestamp to always get freshest GitHub contents
-        const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FOLDER}?ref=main&t=${Date.now()}`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'application/vnd.github.v3+json',
-            'Cache-Control': 'no-cache'
-          }
+        const headers = {
+          'Accept': 'application/vnd.github.v3+json',
+          'Cache-Control': 'no-cache'
+        };
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FOLDER}?ref=main&per_page=100&t=${Date.now()}`, {
+          headers
         });
 
         if (res.status === 404) {
           games = [];
           renderGamesList();
           startNewGame();
+          if (showToastNotice) showToast('Folder configs/ was not found in repository.', false);
           return;
         }
 
         if (!res.ok) {
-          throw new Error(`HTTP ${res.status}: Check GitHub Token permissions.`);
+          if (res.status === 403) {
+            throw new Error("GitHub API rate limit reached or access restricted. Click 'Connect' to set a GitHub Token.");
+          } else if (res.status === 401) {
+            throw new Error("Invalid GitHub Token. Click 'Connected' to update your token.");
+          } else {
+            throw new Error(`HTTP ${res.status}: Failed to fetch repository contents.`);
+          }
         }
 
         const items = await res.json();
-        const jsonFiles = items.filter(f => f.name.endsWith('.json'));
+        if (!Array.isArray(items)) {
+          throw new Error("Unexpected contents format returned by GitHub.");
+        }
 
-        // Load configs content in parallel
+        const jsonFiles = items.filter(f => f.name && f.name.endsWith('.json'));
+
+        // Load configs content in parallel with robust fallbacks
         games = await Promise.all(jsonFiles.map(async f => {
-          const pkgName = f.name.replace('.json', '');
-          let config = { show_ads: true, show_interstitial: true, show_rewarded: true, interstitial_interval_sec: 45, ad_fail_timeout: 5 };
+          const pkgName = f.name.replace(/\.json$/i, '');
+          let config = { ...DEFAULT_CONFIG, GameId: pkgName };
+
           try {
-            const rawRes = await fetch(`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${FOLDER}/${f.name}?t=${Date.now()}`);
-            if (rawRes.ok) {
-              config = await rawRes.json();
+            // Strategy 1: GitHub API with Accept: application/vnd.github.v3.raw (supports token & CORS)
+            const apiRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FOLDER}/${f.name}?ref=main&t=${Date.now()}`, {
+              headers: {
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                'Accept': 'application/vnd.github.v3.raw',
+                'Cache-Control': 'no-cache'
+              }
+            });
+
+            if (apiRes.ok) {
+              const loadedData = await apiRes.json();
+              config = normalizeConfig(loadedData, pkgName);
+            } else if (f.download_url) {
+              // Strategy 2: Download URL from GitHub item
+              const dlRes = await fetch(`${f.download_url}?t=${Date.now()}`);
+              if (dlRes.ok) {
+                const loadedData = await dlRes.json();
+                config = normalizeConfig(loadedData, pkgName);
+              }
             }
-          } catch (err) {}
+          } catch (apiErr) {
+            // Strategy 3: raw.githubusercontent.com fallback
+            try {
+              const rawRes = await fetch(`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${FOLDER}/${f.name}?t=${Date.now()}`);
+              if (rawRes.ok) {
+                const loadedData = await rawRes.json();
+                config = normalizeConfig(loadedData, pkgName);
+              }
+            } catch (rawErr) {
+              console.warn(`Could not load raw config for ${f.name}`, rawErr);
+            }
+          }
+
           return {
             name: pkgName,
             sha: f.sha,
@@ -774,6 +1003,8 @@
         if (activeGameName) {
           const match = games.find(g => g.name === activeGameName);
           if (match) selectGame(match);
+          else if (games.length > 0) selectGame(games[0]);
+          else startNewGame();
         } else if (games.length > 0) {
           selectGame(games[0]);
         } else {
@@ -781,10 +1012,15 @@
         }
 
         if (showToastNotice) {
-          showToast(`Refreshed ${games.length} game(s) from GitHub.`, true);
+          showToast(`Refreshed ${games.length} game config(s) from GitHub.`, true);
         }
       } catch (err) {
-        listEl.innerHTML = `<div class="empty-state" style="color:var(--danger);">Error: ${err.message}</div>`;
+        listEl.innerHTML = `<div class="empty-state" style="color:var(--danger);"><p>⚠️ ${err.message}</p><button class="token-btn" style="margin:12px auto 0;" onclick="openTokenModal()">🔑 Connect Token</button></div>`;
+        if (showToastNotice) {
+          showToast(`❌ ${err.message}`, false);
+        }
+      } finally {
+        if (refreshBtn) refreshBtn.classList.remove('spinning');
       }
     }
 
@@ -804,12 +1040,20 @@
         item.className = `game-item ${isActive ? 'active' : ''}`;
         item.onclick = () => selectGame(game);
 
-        const isAdsOn = game.config ? game.config.show_ads : true;
-        const badgeClass = isAdsOn ? 'badge-on' : 'badge-off';
-        const badgeText = isAdsOn ? 'Ads: ON' : 'Ads: OFF';
+        const isAdsHidden = game.config ? (game.config.HideAllAds === true) : false;
+        const badgeClass = isAdsHidden ? 'badge-off' : 'badge-on';
+        const badgeText = isAdsHidden ? 'Ads: OFF' : 'Ads: ON';
+
+        const gameId = (game.config && game.config.GameId) ? game.config.GameId : game.name;
+        const projectName = (game.config && game.config.ProjectName) ? game.config.ProjectName : "";
 
         item.innerHTML = `
-          <div class="game-item-title" title="${game.name}">${game.name}</div>
+          <div class="game-item-info">
+            <div class="game-item-title">
+              <span class="game-id-badge">${gameId}</span>
+            </div>
+            ${projectName ? `<div class="game-item-sub" title="${projectName}">${projectName}</div>` : `<div class="game-item-sub">${game.name}.json</div>`}
+          </div>
           <span class="game-badge ${badgeClass}">${badgeText}</span>
         `;
         listEl.appendChild(item);
@@ -822,7 +1066,12 @@
         renderGamesList();
         return;
       }
-      const filtered = games.filter(g => g.name.toLowerCase().includes(query));
+      const filtered = games.filter(g => {
+        const nameMatch = g.name && g.name.toLowerCase().includes(query);
+        const idMatch = g.config && g.config.GameId && g.config.GameId.toLowerCase().includes(query);
+        const projMatch = g.config && g.config.ProjectName && g.config.ProjectName.toLowerCase().includes(query);
+        return nameMatch || idMatch || projMatch;
+      });
       renderGamesList(filtered);
     }
 
@@ -830,10 +1079,16 @@
       activeGameName = game.name;
       renderGamesList();
 
-      document.getElementById('pageHeading').innerText = game.name;
-      document.getElementById('pageSubHeading').innerText = `Editing remote configuration for ${game.name}`;
-      document.getElementById('packageNameInput').value = game.name;
-      document.getElementById('packageNameInput').disabled = true;
+      const cfg = normalizeConfig(game.config, game.name);
+      const heading = cfg.GameId || game.name;
+      document.getElementById('pageHeading').innerText = heading;
+      document.getElementById('pageSubHeading').innerText = cfg.ProjectName 
+        ? `Project: ${cfg.ProjectName} • File: ${game.name}.json` 
+        : `File: ${game.name}.json`;
+
+      document.getElementById('gameIdInput').value = cfg.GameId;
+      document.getElementById('gameIdInput').disabled = true;
+      document.getElementById('projectNameInput').value = cfg.ProjectName;
 
       // Update Raw Link
       const rawUrl = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${FOLDER}/${game.name}.json`;
@@ -842,12 +1097,17 @@
       document.getElementById('rawUrlBox').style.display = 'block';
 
       // Fill Form
-      const cfg = game.config || {};
-      document.getElementById('field_show_ads').checked = cfg.show_ads !== false;
-      document.getElementById('field_show_interstitial').checked = cfg.show_interstitial !== false;
-      document.getElementById('field_show_rewarded').checked = cfg.show_rewarded !== false;
-      document.getElementById('field_interstitial_interval').value = cfg.interstitial_interval_sec ?? 45.0;
-      document.getElementById('field_ad_fail_timeout').value = cfg.ad_fail_timeout ?? 5.0;
+      document.getElementById('field_HideAllAds').checked = cfg.HideAllAds;
+      document.getElementById('field_CanShowAppOpen').checked = cfg.CanShowAppOpen;
+      document.getElementById('field_CanShowAppOpenOnStart').checked = cfg.CanShowAppOpenOnStart;
+      document.getElementById('field_CanShowAppOpenOnResume').checked = cfg.CanShowAppOpenOnResume;
+      document.getElementById('field_CanShowAppOpenAfterInterstitial').checked = cfg.CanShowAppOpenAfterInterstitial;
+      document.getElementById('field_CanShowAppOpenAfterInterstitial2').checked = cfg.CanShowAppOpenAfterInterstitial2;
+      document.getElementById('field_CanShowBanner').checked = cfg.CanShowBanner;
+      document.getElementById('field_CanShowInterstitial').checked = cfg.CanShowInterstitial;
+      document.getElementById('field_CanShowRewarded').checked = cfg.CanShowRewarded;
+      document.getElementById('field_CanShowRectBanner').checked = cfg.CanShowRectBanner;
+      document.getElementById('field_MissionDelay').value = cfg.MissionDelay;
 
       hideToast();
     }
@@ -857,52 +1117,76 @@
       renderGamesList();
 
       document.getElementById('pageHeading').innerText = "Create New Game Config";
-      document.getElementById('pageSubHeading').innerText = "Add a new game configuration to the repository";
-      const pkgInput = document.getElementById('packageNameInput');
-      pkgInput.value = "";
-      pkgInput.disabled = false;
-      pkgInput.focus();
+      document.getElementById('pageSubHeading').innerText = "Add a new game configuration with a unique Game ID (e.g. az-1012)";
 
+      const gameIdInput = document.getElementById('gameIdInput');
+      gameIdInput.value = "";
+      gameIdInput.disabled = false;
+      gameIdInput.focus();
+
+      document.getElementById('projectNameInput').value = "";
       document.getElementById('rawUrlBox').style.display = 'none';
 
       // Safe defaults
-      document.getElementById('field_show_ads').checked = true;
-      document.getElementById('field_show_interstitial').checked = true;
-      document.getElementById('field_show_rewarded').checked = true;
-      document.getElementById('field_interstitial_interval').value = 45.0;
-      document.getElementById('field_ad_fail_timeout').value = 5.0;
+      document.getElementById('field_HideAllAds').checked = DEFAULT_CONFIG.HideAllAds;
+      document.getElementById('field_CanShowAppOpen').checked = DEFAULT_CONFIG.CanShowAppOpen;
+      document.getElementById('field_CanShowAppOpenOnStart').checked = DEFAULT_CONFIG.CanShowAppOpenOnStart;
+      document.getElementById('field_CanShowAppOpenOnResume').checked = DEFAULT_CONFIG.CanShowAppOpenOnResume;
+      document.getElementById('field_CanShowAppOpenAfterInterstitial').checked = DEFAULT_CONFIG.CanShowAppOpenAfterInterstitial;
+      document.getElementById('field_CanShowAppOpenAfterInterstitial2').checked = DEFAULT_CONFIG.CanShowAppOpenAfterInterstitial2;
+      document.getElementById('field_CanShowBanner').checked = DEFAULT_CONFIG.CanShowBanner;
+      document.getElementById('field_CanShowInterstitial').checked = DEFAULT_CONFIG.CanShowInterstitial;
+      document.getElementById('field_CanShowRewarded').checked = DEFAULT_CONFIG.CanShowRewarded;
+      document.getElementById('field_CanShowRectBanner').checked = DEFAULT_CONFIG.CanShowRectBanner;
+      document.getElementById('field_MissionDelay').value = DEFAULT_CONFIG.MissionDelay;
 
       hideToast();
     }
 
-    function onPackageNameChanged() {
-      const val = document.getElementById('packageNameInput').value.trim();
-      if (val) {
-        document.getElementById('pageHeading').innerText = val;
-      } else {
-        document.getElementById('pageHeading').innerText = "Create New Game Config";
+    function onGameIdChanged() {
+      const val = document.getElementById('gameIdInput').value.trim();
+      document.getElementById('pageHeading').innerText = val || "Create New Game Config";
+    }
+
+    function onProjectNameChanged() {
+      const proj = document.getElementById('projectNameInput').value.trim();
+      const gid = document.getElementById('gameIdInput').value.trim();
+      if (gid) {
+        document.getElementById('pageSubHeading').innerText = proj ? `Project: ${proj}` : "Add a new game configuration";
       }
     }
 
     async function saveGameConfig() {
       const token = getToken();
       if (!token) {
+        showToast("⚠️ GitHub Personal Access Token is required to save changes. Please connect your token.", false);
         openTokenModal();
         return;
       }
 
-      const pkgName = document.getElementById('packageNameInput').value.trim();
-      if (!pkgName) {
-        showToast("Please enter a package name (e.g. com.azgame.gameone).", false);
+      const gameId = document.getElementById('gameIdInput').value.trim();
+      if (!gameId) {
+        showToast("Please enter a Game ID / Code (e.g. az-1012, sd-2021).", false);
+        document.getElementById('gameIdInput').focus();
         return;
       }
 
+      const projectName = document.getElementById('projectNameInput').value.trim();
+
       const config = {
-        show_ads: document.getElementById('field_show_ads').checked,
-        show_interstitial: document.getElementById('field_show_interstitial').checked,
-        show_rewarded: document.getElementById('field_show_rewarded').checked,
-        interstitial_interval_sec: parseFloat(document.getElementById('field_interstitial_interval').value) || 45.0,
-        ad_fail_timeout: parseFloat(document.getElementById('field_ad_fail_timeout').value) || 5.0
+        GameId: gameId,
+        ProjectName: projectName,
+        HideAllAds: document.getElementById('field_HideAllAds').checked,
+        CanShowAppOpen: document.getElementById('field_CanShowAppOpen').checked,
+        CanShowAppOpenOnStart: document.getElementById('field_CanShowAppOpenOnStart').checked,
+        CanShowAppOpenOnResume: document.getElementById('field_CanShowAppOpenOnResume').checked,
+        CanShowAppOpenAfterInterstitial: document.getElementById('field_CanShowAppOpenAfterInterstitial').checked,
+        CanShowAppOpenAfterInterstitial2: document.getElementById('field_CanShowAppOpenAfterInterstitial2').checked,
+        CanShowBanner: document.getElementById('field_CanShowBanner').checked,
+        CanShowInterstitial: document.getElementById('field_CanShowInterstitial').checked,
+        CanShowRewarded: document.getElementById('field_CanShowRewarded').checked,
+        CanShowRectBanner: document.getElementById('field_CanShowRectBanner').checked,
+        MissionDelay: parseInt(document.getElementById('field_MissionDelay').value, 10) || 60
       };
 
       const saveBtn = document.getElementById('saveButton');
@@ -910,19 +1194,21 @@
       saveBtn.innerText = 'Publishing to GitHub...';
       showToast('Publishing configuration to GitHub...', true);
 
-      const filePath = `${FOLDER}/${pkgName}.json`;
+      // Primary file name: if editing existing file keep file name, otherwise use gameId
+      const fileName = activeGameName || gameId;
+      const filePath = `${FOLDER}/${fileName}.json`;
       const jsonContent = JSON.stringify(config, null, 2);
       const encoded = btoa(unescape(encodeURIComponent(jsonContent)));
 
-      // Find existing SHA if this game exists
+      // Find existing SHA if this file exists
       let sha = null;
-      const existing = games.find(g => g.name === pkgName);
+      const existing = games.find(g => g.name === fileName);
       if (existing && existing.sha) {
         sha = existing.sha;
       }
 
       const bodyPayload = {
-        message: `Update ad config for ${pkgName} via Web Dashboard`,
+        message: `Update ad config for ${fileName} [${gameId}] via Web Dashboard`,
         content: encoded
       };
       if (sha) bodyPayload.sha = sha;
@@ -946,28 +1232,27 @@
         const newSha = resData.content ? resData.content.sha : null;
 
         // INSTANT OPTIMISTIC UPDATE: update local games array immediately!
-        const existingIdx = games.findIndex(g => g.name === pkgName);
+        const existingIdx = games.findIndex(g => g.name === fileName);
         if (existingIdx >= 0) {
           games[existingIdx].config = config;
           games[existingIdx].sha = newSha;
         } else {
           games.unshift({
-            name: pkgName,
+            name: fileName,
             sha: newSha,
             config: config
           });
         }
 
-        // Keep current selected
-        activeGameName = pkgName;
+        activeGameName = fileName;
         renderGamesList();
 
-        document.getElementById('packageNameInput').disabled = true;
+        document.getElementById('gameIdInput').disabled = true;
         const rawUrl = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${filePath}`;
         document.getElementById('rawLinkBtn').href = rawUrl;
         document.getElementById('rawUrlBox').style.display = 'block';
 
-        showToast(`✅ Successfully saved and published <b>${pkgName}</b>! Changes are now live on GitHub.`, true);
+        showToast(`✅ Successfully saved and published <b>${fileName}</b> [${gameId}]! Changes are now live on GitHub.`, true);
       } catch (err) {
         showToast(`❌ Error: ${err.message}`, false);
       } finally {
