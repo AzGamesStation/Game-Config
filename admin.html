@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AzGames - Remote Ad Config Manager</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --success: #22c55e;
+      --danger: #ef4444;
+      --input-bg: #0f172a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 24px;
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+    }
+
+    header {
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .subtitle {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .help-text {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    select {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    /* Switch Toggles */
+    .switch-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .switch-row:last-child {
+      border-bottom: none;
+    }
+
+    .switch-info h4 {
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    .switch-info p {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 26px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #475569;
+      transition: .3s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--success);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(24px);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.2s;
+      width: 100%;
+    }
+
+    .btn-primary {
+      background-color: var(--accent);
+      color: #0f172a;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--accent-hover);
+    }
+
+    .btn-secondary {
+      background-color: #334155;
+      color: #fff;
+      margin-top: 8px;
+    }
+
+    .btn-secondary:hover {
+      background-color: #475569;
+    }
+
+    .status-box {
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 16px;
+      font-size: 0.875rem;
+      display: none;
+    }
+
+    .status-success {
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid var(--success);
+      color: #4ade80;
+    }
+
+    .status-error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid var(--danger);
+      color: #f87171;
+    }
+
+    .games-list-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .game-chip {
+      background: var(--input-bg);
+      border: 1px solid var(--card-border);
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .game-chip:hover {
+      border-color: var(--accent);
+      background: #1e293b;
+    }
+
+    .game-chip.active {
+      border-color: var(--accent);
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 600px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>🎮 AzGames Remote Ad Manager</h1>
+        <div class="subtitle">Visual Control Panel for AzGamesStation/Game-Config</div>
+      </div>
+    </header>
+
+    <!-- GitHub Token Setup Card -->
+    <div class="card" id="tokenCard">
+      <div class="card-title">🔑 1-Time Setup: GitHub Access Token</div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+        To let this dashboard save changes directly to your GitHub repository, paste a GitHub Personal Access Token once.
+        It is stored safely only inside your own web browser.
+      </p>
+      <div class="form-group">
+        <label for="ghToken">GitHub Token (Fine-grained or Classic with 'repo' permission)</label>
+        <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx...">
+        <div class="help-text">
+          Don't have one? <a href="https://github.com/settings/tokens/new?scopes=repo&description=GameConfigDashboard" target="_blank" style="color: var(--accent);">Click here to generate a token with 'repo' scope</a> (takes 30 seconds).
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="saveTokenAndFetch()">Save & Connect to GitHub</button>
+      <div id="tokenStatus" class="status-box"></div>
+    </div>
+
+    <!-- Existing Games Card -->
+    <div class="card" id="gamesCard" style="display:none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <div class="card-title" style="margin-bottom:0;">📁 Games in Repository</div>
+        <button class="btn btn-primary" style="width: auto; padding: 6px 14px; font-size: 0.8rem;" onclick="startNewGame()">+ Add New Game</button>
+      </div>
+      <div id="gamesList" class="games-list-grid">
+        <div style="color: var(--text-muted); font-size: 0.85rem;">Loading games from GitHub...</div>
+      </div>
+    </div>
+
+    <!-- Ad Config Editor Card -->
+    <div class="card" id="editorCard" style="display:none;">
+      <div class="card-title" id="editorTitle">⚙️ Configure Game Ads</div>
+
+      <div class="form-group">
+        <label for="packageName">Package Name / Bundle Identifier</label>
+        <input type="text" id="packageName" placeholder="e.g. com.azgame.gameone">
+        <div class="help-text">Must match your Unity Player Settings identifier exactly.</div>
+      </div>
+
+      <!-- Toggles -->
+      <div class="switch-row">
+        <div class="switch-info">
+          <h4>Show All Ads (Master Kill Switch)</h4>
+          <p>If turned off, all ads are completely disabled for this game.</p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="show_ads" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="switch-row">
+        <div class="switch-info">
+          <h4>Enable Interstitial Ads</h4>
+          <p>Show full-screen ads between levels or game sessions.</p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="show_interstitial" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="switch-row">
+        <div class="switch-info">
+          <h4>Enable Rewarded Video Ads</h4>
+          <p>Allow players to watch ads in exchange for in-game rewards.</p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="show_rewarded" checked>
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <!-- Numeric Settings -->
+      <div class="grid-2" style="margin-top: 16px;">
+        <div class="form-group">
+          <label for="interstitial_interval_sec">Interstitial Interval (seconds)</label>
+          <input type="number" id="interstitial_interval_sec" value="45.0" step="5" min="0">
+          <div class="help-text">Cooldown time between interstitial ads.</div>
+        </div>
+
+        <div class="form-group">
+          <label for="ad_fail_timeout">Ad Fail Timeout (seconds)</label>
+          <input type="number" id="ad_fail_timeout" value="5.0" step="1" min="1">
+          <div class="help-text">Max seconds to wait before continuing game.</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <button class="btn btn-primary" id="saveBtn" onclick="saveToGitHub()">💾 Save & Publish to GitHub</button>
+      </div>
+
+      <div id="saveStatus" class="status-box"></div>
+    </div>
+  </div>
+
+  <script>
+    const REPO_OWNER = "AzGamesStation";
+    const REPO_NAME = "Game-Config";
+    const CONFIG_FOLDER = "configs";
+
+    let currentSha = null;
+    let existingFiles = [];
+
+    // Auto-load token from localStorage
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedToken = localStorage.getItem('azgames_gh_token');
+      if (savedToken) {
+        document.getElementById('ghToken').value = savedToken;
+        saveTokenAndFetch();
+      }
+    });
+
+    function getToken() {
+      return document.getElementById('ghToken').value.trim();
+    }
+
+    async function saveTokenAndFetch() {
+      const token = getToken();
+      const statusBox = document.getElementById('tokenStatus');
+
+      if (!token) {
+        showStatus(statusBox, 'Please enter a GitHub Personal Access Token.', false);
+        return;
+      }
+
+      showStatus(statusBox, 'Connecting to GitHub...', true);
+
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to access repository (${res.status} ${res.statusText}). Check token permissions.`);
+        }
+
+        localStorage.setItem('azgames_gh_token', token);
+        showStatus(statusBox, `Connected successfully to ${REPO_OWNER}/${REPO_NAME}!`, true);
+
+        document.getElementById('gamesCard').style.display = 'block';
+        document.getElementById('editorCard').style.display = 'block';
+
+        loadGamesList();
+      } catch (err) {
+        showStatus(statusBox, err.message, false);
+      }
+    }
+
+    async function loadGamesList() {
+      const token = getToken();
+      const listContainer = document.getElementById('gamesList');
+      listContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem;">Refreshing games...</div>';
+
+      try {
+        const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${CONFIG_FOLDER}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+
+        if (res.status === 404) {
+          listContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem;">No configs found yet in configs/ folder. Click "+ Add New Game" above to create your first one!</div>';
+          startNewGame();
+          return;
+        }
+
+        const data = await res.json();
+        existingFiles = data.filter(item => item.name.endsWith('.json'));
+
+        if (existingFiles.length === 0) {
+          listContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem;">No .json games found in configs/ folder.</div>';
+          startNewGame();
+          return;
+        }
+
+        listContainer.innerHTML = '';
+        existingFiles.forEach(file => {
+          const gamePkg = file.name.replace('.json', '');
+          const chip = document.createElement('div');
+          chip.className = 'game-chip';
+          chip.innerText = `🎮 ${gamePkg}`;
+          chip.onclick = () => selectGame(file, chip);
+          listContainer.appendChild(chip);
+        });
+
+        // Automatically select first game
+        if (existingFiles.length > 0) {
+          selectGame(existingFiles[0], listContainer.children[0]);
+        }
+      } catch (err) {
+        listContainer.innerHTML = `<div style="color: var(--danger); font-size: 0.85rem;">Error loading list: ${err.message}</div>`;
+      }
+    }
+
+    async function selectGame(fileItem, chipElement) {
+      document.querySelectorAll('.game-chip').forEach(c => c.classList.remove('active'));
+      if (chipElement) chipElement.classList.add('active');
+
+      const token = getToken();
+      const saveStatus = document.getElementById('saveStatus');
+      saveStatus.style.display = 'none';
+
+      const gamePkg = fileItem.name.replace('.json', '');
+      document.getElementById('packageName').value = gamePkg;
+      document.getElementById('packageName').disabled = true; // prevent changing file name when editing
+      document.getElementById('editorTitle').innerText = `⚙️ Editing: ${gamePkg}`;
+      currentSha = fileItem.sha;
+
+      try {
+        const res = await fetch(fileItem.url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json'
+          }
+        });
+        const fileData = await res.json();
+        const contentStr = decodeURIComponent(escape(atob(fileData.content)));
+        const config = JSON.parse(contentStr);
+
+        document.getElementById('show_ads').checked = config.show_ads ?? true;
+        document.getElementById('show_interstitial').checked = config.show_interstitial ?? true;
+        document.getElementById('show_rewarded').checked = config.show_rewarded ?? true;
+        document.getElementById('interstitial_interval_sec').value = config.interstitial_interval_sec ?? 45.0;
+        document.getElementById('ad_fail_timeout').value = config.ad_fail_timeout ?? 5.0;
+      } catch (e) {
+        console.error("Error reading file content", e);
+      }
+    }
+
+    function startNewGame() {
+      document.querySelectorAll('.game-chip').forEach(c => c.classList.remove('active'));
+      document.getElementById('packageName').value = '';
+      document.getElementById('packageName').disabled = false;
+      document.getElementById('packageName').focus();
+      document.getElementById('editorTitle').innerText = '✨ Add New Game Config';
+      currentSha = null;
+
+      document.getElementById('show_ads').checked = true;
+      document.getElementById('show_interstitial').checked = true;
+      document.getElementById('show_rewarded').checked = true;
+      document.getElementById('interstitial_interval_sec').value = 45.0;
+      document.getElementById('ad_fail_timeout').value = 5.0;
+
+      const saveStatus = document.getElementById('saveStatus');
+      saveStatus.style.display = 'none';
+    }
+
+    async function saveToGitHub() {
+      const token = getToken();
+      const pkgName = document.getElementById('packageName').value.trim();
+      const statusBox = document.getElementById('saveStatus');
+      const saveBtn = document.getElementById('saveBtn');
+
+      if (!pkgName) {
+        showStatus(statusBox, 'Please enter a Package Name (e.g. com.azgame.gamename).', false);
+        return;
+      }
+
+      const configObject = {
+        show_ads: document.getElementById('show_ads').checked,
+        show_interstitial: document.getElementById('show_interstitial').checked,
+        show_rewarded: document.getElementById('show_rewarded').checked,
+        interstitial_interval_sec: parseFloat(document.getElementById('interstitial_interval_sec').value) || 45.0,
+        ad_fail_timeout: parseFloat(document.getElementById('ad_fail_timeout').value) || 5.0
+      };
+
+      const jsonString = JSON.stringify(configObject, null, 2);
+      const encodedContent = btoa(unescape(encodeURIComponent(jsonString)));
+
+      saveBtn.disabled = true;
+      saveBtn.innerText = 'Publishing to GitHub...';
+      showStatus(statusBox, 'Publishing changes to GitHub...', true);
+
+      const filePath = `${CONFIG_FOLDER}/${pkgName}.json`;
+      const url = `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${filePath}`;
+
+      const payload = {
+        message: `Update ad config for ${pkgName} via Web Manager`,
+        content: encodedContent
+      };
+
+      if (currentSha) {
+        payload.sha = currentSha;
+      }
+
+      try {
+        const res = await fetch(url, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const resData = await res.json();
+
+        if (!res.ok) {
+          throw new Error(resData.message || 'Failed to save file to GitHub.');
+        }
+
+        currentSha = resData.content.sha;
+        const liveRawUrl = `https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${filePath}`;
+
+        showStatus(statusBox, `✅ Successfully published! Game config saved to ${filePath}.<br><br><a href="${liveRawUrl}" target="_blank" style="color: var(--accent);">View Live Raw JSON File</a>`, true);
+
+        // Refresh game list
+        loadGamesList();
+      } catch (err) {
+        showStatus(statusBox, `❌ Error: ${err.message}`, false);
+      } finally {
+        saveBtn.disabled = false;
+        saveBtn.innerText = '💾 Save & Publish to GitHub';
+      }
+    }
+
+    function showStatus(element, htmlMsg, isSuccess) {
+      element.style.display = 'block';
+      element.className = `status-box ${isSuccess ? 'status-success' : 'status-error'}`;
+      element.innerHTML = htmlMsg;
+    }
+  </script>
+</body>
+</html>
